@@ -1,7 +1,7 @@
 ---
 title: "R Markdown Presentation & Plotly"
 author: "Kiattisak Chaisomboon"
-date: "6/28/2020"
+date: "28/6/2020"
 output: ioslides_presentation
 ---
 
@@ -9,27 +9,57 @@ output: ioslides_presentation
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## R Markdown
+## Plotly
+Please press 'Play' button
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(plotly)
 
-This is an R Markdown presentation. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+accumulate_by <- function(dat, var) {
+  var <- lazyeval::f_eval(var, dat)
+  lvls <- plotly:::getLevels(var)
+  dats <- lapply(seq_along(lvls), function(x) {
+    cbind(dat[var %in% lvls[seq(1, x)], ], frame = lvls[[x]])
+  })
+  dplyr::bind_rows(dats)
+}
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document.
+df <- txhousing 
+fig <- df %>%
+  filter(year > 2005, city %in% c("Abilene", "Bay Area"))
+fig <- fig %>% accumulate_by(~date)
 
-## Slide with Bullets
 
-- Bullet 1
-- Bullet 2
-- Bullet 3
+fig <- fig %>%
+  plot_ly(
+    x = ~date, 
+    y = ~median,
+    split = ~city,
+    frame = ~frame, 
+    type = 'scatter',
+    mode = 'lines', 
+    line = list(simplyfy = F)
+  )
+fig <- fig %>% layout(
+  xaxis = list(
+    title = "Date",
+    zeroline = F
+  ),
+  yaxis = list(
+    title = "Median",
+    zeroline = F
+  )
+) 
+fig <- fig %>% animation_opts(
+  frame = 100, 
+  transition = 0, 
+  redraw = FALSE
+)
+fig <- fig %>% animation_slider(
+  hide = T
+)
+fig <- fig %>% animation_button(
+  x = 1, xanchor = "right", y = 0, yanchor = "bottom"
+)
 
-## Slide with R Output
-
-```{r cars, echo = TRUE}
-summary(cars)
+fig
 ```
-
-## Slide with Plot
-
-```{r pressure}
-plot(pressure)
-```
-
